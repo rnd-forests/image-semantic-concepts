@@ -4,7 +4,7 @@ import pickle
 
 def save_variables(file, data, overwrite=False):
     if os.path.exists(file) and overwrite is False:
-        raise RuntimeError('{:s} existed and overwrite is not allowed.'.format(file))
+        raise RuntimeError('{:s} existed and overwriting is not allowed.'.format(file))
     with open(file, 'wb') as fp:
         pickle.dump(data, fp, pickle.HIGHEST_PROTOCOL)
 

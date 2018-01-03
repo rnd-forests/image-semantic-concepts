@@ -11,11 +11,12 @@ from nltk import word_tokenize, pos_tag
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 import config
+from captions import Captions
 from helpers import load_variables
-from vocabulary import Captions, build_dictionary
+from vocabulary import build_dictionary
 
 stop_words = stopwords.words('english')
-punct_re = re.compile('[{}]'.format(re.escape(string.punctuation)))
+punctuation_re = re.compile('[{}]'.format(re.escape(string.punctuation)))
 
 if not os.path.exists(config.DICTIONARY_PATH):
     build_dictionary()
@@ -25,11 +26,10 @@ flickr_captions = captions.get_all_captions()
 flickr_vocab = load_variables(config.DICTIONARY_PATH)['words']
 
 
-def extract_pos(sentence):
+def pos(sentence):
     candidates = list()
-    sentence = punct_re.sub(' ', sentence)
-    words = word_tokenize(sentence)
-    words = list(map(lambda w: w.lower(), words))
+    sentence = punctuation_re.sub(' ', sentence)
+    words = list(map(lambda w: w.lower(), word_tokenize(sentence)))
     tagged_words = pos_tag(words)
     for word, tag in tagged_words:
         if tag in config.POS_TAGS and word not in stop_words:
@@ -37,26 +37,26 @@ def extract_pos(sentence):
     return candidates
 
 
-def extract_tfidf(sentences, min_df=1, max_df=1.0, num_terms=config.NUM_TERMS):
-    terms = list()
-    words = [extract_pos(unidecode(text)) for text in sentences]
+def get_tags(sentences, min_df=1, max_df=1.0, num_terms=config.NUM_TERMS):
+    tags = list()
+    words = [pos(unidecode(sentence)) for sentence in sentences]
     words = list(np.unique(list(chain(*words))))
     words = [word for word in words if word in flickr_vocab]
-    tfidf = TfidfVectorizer(vocabulary=words, min_df=min_df, max_df=max_df)
+    tfidf = TfidfVectorizer(vocabulary=words, min_df=min_df, max_df=max_df, norm='l2', sublinear_tf=True)
     x = tfidf.fit_transform(sentences)
     sorted_words = [v[0] for v in sorted(tfidf.vocabulary_.items(), key=operator.itemgetter(1))]
     sorted_array = np.fliplr(np.argsort(x.toarray()))
     for array in sorted_array:
         term = [sorted_words[w] for w in array[0:num_terms]]
-        terms.append(term)
-    return terms
+        tags.append(term)
+    return tags
 
 
 def convert_caption_to_tags():
     with open(config.TAGS_PATH, 'w') as file:
         for k, v in flickr_captions.items():
             print(k)
-            tags = extract_tfidf([''.join(v)])
+            tags = get_tags([''.join(v)])
             file.write(k + "\t" + ','.join(tags[0]) + "\n")
 
 
