@@ -12,9 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 import config
 from helpers import load_variables
-from vocabulary import Captions
-from vocabulary import build_dictionary
-from ordered_dict import DefaultListOrderedDict
+from vocabulary import Captions, build_dictionary
 
 stop_words = stopwords.words('english')
 punct_re = re.compile('[{}]'.format(re.escape(string.punctuation)))
@@ -22,10 +20,9 @@ punct_re = re.compile('[{}]'.format(re.escape(string.punctuation)))
 if not os.path.exists(config.DICTIONARY_PATH):
     build_dictionary()
 
-flickr_vocab = load_variables(config.DICTIONARY_PATH)['words']
-
 captions = Captions(config.CAPTIONS_PATH)
 flickr_captions = captions.get_all_captions()
+flickr_vocab = load_variables(config.DICTIONARY_PATH)['words']
 
 
 def extract_pos(sentence):
@@ -42,52 +39,52 @@ def extract_pos(sentence):
 
 def extract_tfidf(sentences, min_df=1, max_df=1.0, num_terms=config.NUM_TERMS):
     terms = list()
-    vocabulary = [extract_pos(unidecode(text)) for text in sentences]
-    vocabulary = list(np.unique(list(chain(*vocabulary))))
-    vocabulary = [word for word in vocabulary if word in flickr_vocab]
-    tfidf = TfidfVectorizer(vocabulary=vocabulary, min_df=min_df, max_df=max_df)
+    words = [extract_pos(unidecode(text)) for text in sentences]
+    words = list(np.unique(list(chain(*words))))
+    words = [word for word in words if word in flickr_vocab]
+    tfidf = TfidfVectorizer(vocabulary=words, min_df=min_df, max_df=max_df)
     x = tfidf.fit_transform(sentences)
-    sorted_vocabulary = [v[0] for v in sorted(tfidf.vocabulary_.items(), key=operator.itemgetter(1))]
+    sorted_words = [v[0] for v in sorted(tfidf.vocabulary_.items(), key=operator.itemgetter(1))]
     sorted_array = np.fliplr(np.argsort(x.toarray()))
     for array in sorted_array:
-        term = [sorted_vocabulary[w] for w in array[0:num_terms]]
+        term = [sorted_words[w] for w in array[0:num_terms]]
         terms.append(term)
     return terms
 
 
-def convert_caption_to_keywords():
-    with open(config.KEYWORDS_PATH, 'w') as file:
+def convert_caption_to_tags():
+    with open(config.TAGS_PATH, 'w') as file:
         for k, v in flickr_captions.items():
             print(k)
-            keywords = extract_tfidf([''.join(v)])
-            file.write(k + "\t" + ','.join(keywords[0]) + "\n")
+            tags = extract_tfidf([''.join(v)])
+            file.write(k + "\t" + ','.join(tags[0]) + "\n")
 
 
-def convert_to_multi_hot_vectors(keywords, dictionary):
+def convert_to_multi_hot_vectors(tags, dictionary):
     indices = {word: idx for idx, word in enumerate(dictionary)}
     output = np.zeros((len(dictionary)), dtype=np.int32)
-    for keyword in keywords:
-        output[indices[keyword]] = 1
+    for tag in tags:
+        output[indices[tag]] = 1
     return output
 
 
-def preprocess_keywords():
+def generate_labels():
     labels = list()
-    with open(config.KEYWORDS_PATH, 'r') as file:
+    print('Generating labels...')
+    with open(config.TAGS_PATH, 'r') as file:
         line = file.readline()
         while line:
-            _, keywords = re.split(r'\t', line)
-            print(keywords)
-            keywords = keywords.split(',')
-            keywords = [unidecode(v.rstrip()) for v in keywords]
-            keywords = convert_to_multi_hot_vectors(keywords, flickr_vocab)
-            labels.append(keywords)
+            _, tags = re.split(r'\t', line)
+            tags = tags.split(',')
+            tags = [unidecode(v.rstrip()) for v in tags]
+            tags = convert_to_multi_hot_vectors(tags, flickr_vocab)
+            labels.append(tags)
             line = file.readline()
     np.save(config.LABELS_PATH, np.array(labels))
 
 
-if not os.path.exists(config.KEYWORDS_PATH):
-    convert_caption_to_keywords()
+if not os.path.exists(config.TAGS_PATH):
+    convert_caption_to_tags()
 
 if not os.path.exists(config.LABELS_PATH):
-    preprocess_keywords()
+    generate_labels()

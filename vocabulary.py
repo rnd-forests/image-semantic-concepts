@@ -55,12 +55,12 @@ def get_vocab(caps, punctuations, mapping):
 
     t = [t3 for t1 in t for t2 in t1 for t3 in t2]
     t = [(l, 'other') if mapping.get(r) is None else (l, mapping[r]) for (l, r) in t]
-    vcb = Counter(elem for elem in t)
-    vcb = vcb.most_common()
+    vocab = Counter(elem for elem in t)
+    vocab = vocab.most_common()
 
-    word = [l for ((l, r), c) in vcb]
-    pos = [r for ((l, r), c) in vcb]
-    count = [c for ((l, r), c) in vcb]
+    word = [l for ((l, r), c) in vocab]
+    pos = [r for ((l, r), c) in vocab]
+    count = [c for ((l, r), c) in vocab]
 
     poss = []
     counts = []
@@ -79,7 +79,6 @@ def get_vocab(caps, punctuations, mapping):
     poss = [poss[i] for i in ind]
     counts = [counts[i] for i in ind]
 
-    # Remove punctuations
     non_punct = [i for (i, x) in enumerate(words) if x not in punctuations]
     words = [words[i] for i in non_punct]
     counts = [counts[i] for i in non_punct]

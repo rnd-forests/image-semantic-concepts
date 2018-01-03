@@ -1,16 +1,18 @@
 import os
 import pickle
 
-def save_variables(pickle_file_name, var, overwrite = False):
-    if os.path.exists(pickle_file_name) and overwrite == False:
-        raise Exception('{:s} exists and over write is false.'.format(pickle_file_name))
-    with open(pickle_file_name, 'wb') as f:
-        pickle.dump(var, f, pickle.HIGHEST_PROTOCOL)
 
-def load_variables(pickle_file_name):
-    if os.path.exists(pickle_file_name):
-        with open(pickle_file_name, 'rb') as f:
-            d = pickle.load(f)
-        return d
+def save_variables(file, data, overwrite=False):
+    if os.path.exists(file) and overwrite is False:
+        raise RuntimeError('{:s} existed and overwrite is not allowed.'.format(file))
+    with open(file, 'wb') as fp:
+        pickle.dump(data, fp, pickle.HIGHEST_PROTOCOL)
+
+
+def load_variables(file):
+    if os.path.exists(file):
+        with open(file, 'rb') as fp:
+            data = pickle.load(fp)
+        return data
     else:
-        raise Exception('{:s} does not exists.'.format(pickle_file_name))
+        raise RuntimeError('{:s} does not exist.'.format(file))

@@ -20,13 +20,14 @@ n_inputs = X_train.shape[1]
 n_outputs = y_train.shape[1]
 
 model = Sequential()
-model.add(Dense(5000, activation='relu', kernel_initializer='he_normal', input_shape=(n_inputs,)))
-model.add(Dropout(0.4))
-model.add(Dense(2500, activation='relu', kernel_initializer='he_normal'))
+model.add(Dense(8192, activation='relu', kernel_initializer='he_normal', input_shape=(n_inputs,)))
 model.add(Dropout(0.5))
+model.add(Dense(2048, activation='relu', kernel_initializer='he_normal'))
+model.add(Dropout(0.5))
+model.add(Dense(1024, activation='relu', kernel_initializer='he_normal'))
 model.add(Dense(n_outputs, activation='sigmoid'))
 
 adam = Adam(lr=1e-3)
 model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['accuracy'])
-model.fit(X_train, y_train, batch_size=128, epochs=5, validation_data=(X_test, y_test))
-model.save('models/my_model.h5')
+model.fit(X_train, y_train, batch_size=64, epochs=10, shuffle=True, validation_data=(X_test, y_test))
+model.save('models/model.h5')
