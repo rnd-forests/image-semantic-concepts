@@ -20,9 +20,9 @@ n_inputs = X_train.shape[1]
 n_outputs = y_train.shape[1]
 
 model = Sequential()
-model.add(Dense(10000, activation='relu', input_shape=(n_inputs,)))
+model.add(Dense(5000, activation='relu', kernel_initializer='he_normal', input_shape=(n_inputs,)))
 model.add(Dropout(0.4))
-model.add(Dense(8000, activation='relu'))
+model.add(Dense(2500, activation='relu', kernel_initializer='he_normal'))
 model.add(Dropout(0.5))
 model.add(Dense(n_outputs, activation='sigmoid'))
 
