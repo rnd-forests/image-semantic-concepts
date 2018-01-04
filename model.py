@@ -6,8 +6,8 @@ from sklearn.model_selection import train_test_split
 
 import config
 
-features = np.load(config.FEATURES_PATH, mmap_mode='r')['features']
-labels = np.load(config.LABELS_PATH, mmap_mode='r')
+features = np.load(config.FEATURES_FILE, mmap_mode='r')['features']
+labels = np.load(config.LABELS_FILE, mmap_mode='r')
 
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3)
 

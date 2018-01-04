@@ -11,7 +11,7 @@ from keras.preprocessing.image import load_img, img_to_array
 import config
 from helpers import load_variables
 
-vocab = np.array(load_variables(config.DICTIONARY_PATH)['words'])
+vocab = np.array(load_variables(config.VOCABULARY_FILE)['words'])
 
 
 def encode_image_vgg16(image):
@@ -28,7 +28,7 @@ def encode_image_vgg16(image):
     return image_features
 
 
-def predict(image, num_tags=config.NUM_TERMS, verbose=True):
+def predict(image, num_tags=config.TAGS_COUNT, verbose=True):
     model = load_model('models/model.h5')
     image_features = encode_image_vgg16(image)
     out = model.predict_proba(image_features)

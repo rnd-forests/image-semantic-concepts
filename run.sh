@@ -1,5 +1,3 @@
 #!/bin/bash
 
-python dataset.py
-python model.py
-python inference.py
+python vocabulary.py && python dataset.py && python model.py && python inference.py

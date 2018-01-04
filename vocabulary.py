@@ -1,4 +1,5 @@
 import os
+import string
 
 import numpy as np
 from collections import Counter
@@ -10,79 +11,101 @@ from captions import Captions
 from helpers import save_variables, load_variables
 
 
-def get_top_k_vocab(vocab, k):
-    v = dict()
-    for key in vocab.keys():
-        v[key] = vocab[key][:k]
-    return v
+class Vocabulary:
+    def __init__(self, caps_file, size=None, save_file=None):
+        self.size = size
+        self.vocab = None
+        self.caps_file = caps_file
+        self.save_file = save_file
 
+    def build(self):
+        pos = list()
+        caption_processor = Captions(self.caps_file)
+        image_ids = caption_processor.get_img_ids()
 
-def get_vocab(punctuations, mapping):
-    pos = list()
-    stop_words = stopwords.words('english')
-    cap_loader = Captions(config.CAPTIONS_PATH)
-    image_ids = cap_loader.get_img_ids()
+        for i in image_ids:
+            print(i)
+            caps = caption_processor.get_captions(i)
+            tmp = [pos_tag(word_tokenize(str(a).lower())) for a in caps]
+            pos.append(tmp)
 
-    for i in image_ids:
-        print(i)
-        caps = cap_loader.get_captions(i)
-        tmp = [pos_tag(word_tokenize(str(a).lower())) for a in caps]
-        pos.append(tmp)
+        pos_mapping = self.__pos_mapping()
+        pos = [p3 for p1 in pos for p2 in p1 for p3 in p2]
+        pos = [(w, pos_mapping.get(t)) for (w, t) in pos if pos_mapping.get(t) is not None]
+        vocab = Counter(elem for elem in pos)
+        vocab = vocab.most_common()
 
-    pos = [p3 for p1 in pos for p2 in p1 for p3 in p2]
-    pos = [(w, '<UNK>') if mapping.get(t) is None else (w, mapping[t]) for (w, t) in pos]
-    vocab = Counter(elem for elem in pos)
-    vocab = vocab.most_common()
+        word = [w for ((w, t), c) in vocab]
+        word = [w for w in word if w not in self.__stop_words()]
+        pos = [t for ((w, t), c) in vocab]
+        count = [c for ((_, _), c) in vocab]
 
-    word = [w for ((w, t), c) in vocab]
-    word = [w for w in word if w not in stop_words]
-    pos = [t for ((w, t), c) in vocab]
-    count = [c for ((_, _), c) in vocab]
+        poss = []
+        counts = []
+        words = sorted(set(word))
+        for j in range(len(words)):
+            indexes = [i for i, x in enumerate(word) if x == words[j]]
+            pos_tmp = [pos[i] for i in indexes]
+            count_tmp = [count[i] for i in indexes]
+            idx = np.argmax(count_tmp)
+            poss.append(pos_tmp[idx])
+            counts.append(sum(count_tmp))
 
-    poss = []
-    counts = []
-    words = sorted(set(word))
-    for j in range(len(words)):
-        indexes = [i for i, x in enumerate(word) if x == words[j]]
-        pos_tmp = [pos[i] for i in indexes]
-        count_tmp = [count[i] for i in indexes]
-        idx = np.argmax(count_tmp)
-        poss.append(pos_tmp[idx])
-        counts.append(sum(count_tmp))
+        idx = np.argsort(counts)
+        idx = idx[::-1]
+        words = [words[i] for i in idx]
+        poss = [poss[i] for i in idx]
+        counts = [counts[i] for i in idx]
 
-    idx = np.argsort(counts)
-    idx = idx[::-1]
-    words = [words[i] for i in idx]
-    poss = [poss[i] for i in idx]
-    counts = [counts[i] for i in idx]
+        no_punctuation = [i for (i, x) in enumerate(words) if x not in self.__punctuations()]
+        words = [words[i] for i in no_punctuation]
+        counts = [counts[i] for i in no_punctuation]
+        poss = [poss[i] for i in no_punctuation]
 
-    no_punctuation = [i for (i, x) in enumerate(words) if x not in punctuations]
-    words = [words[i] for i in no_punctuation]
-    counts = [counts[i] for i in no_punctuation]
-    poss = [poss[i] for i in no_punctuation]
+        self.vocab = {'words': words, 'counts': counts, 'poss': poss}
 
-    vocab = {'words': words, 'counts': counts, 'poss': poss}
-    return vocab
+    def store(self):
+        if os.path.exists(self.save_file) or self.size is None:
+            return
 
+        if self.save_file is None:
+            raise ValueError('Must specify the path for storing vocabulary.')
 
-def build_dictionary():
-    mapping = {'NNS': 'NN', 'NNP': 'NN', 'NNPS': 'NN', 'NN': 'NN',
-               'VB': 'VB', 'VBD': 'VB', 'VBN': 'VB', 'VBZ': 'VB', 'VBP': 'VB', 'VBG': 'VB',
-               'JJR': 'JJ', 'JJS': 'JJ', 'JJ': 'JJ',
-               'DT': 'DT', 'PRP': 'PRP', 'PRP$': 'PRP', 'IN': 'IN'}
+        self.build()
+        vocab = self.__get_top_k(self.size)
+        save_variables(self.save_file, vocab)
 
-    punctuations = ["''", "'", "``", "`", "-LRB-", "-RRB-", "-LCB-", "-RCB-",
-                    ".", "?", "!", ",", ":", "-", "--", "...", ";"]
+    def get(self):
+        if self.vocab is None:
+            self.build()
+        return self.vocab
 
-    vocab = get_vocab(punctuations, mapping)
-    vocab = get_top_k_vocab(vocab, config.VOCAB_SIZE)
-    save_variables(config.DICTIONARY_PATH, vocab)
+    def load(self):
+        if not os.path.exists(self.save_file):
+            raise ValueError('Vocabulary file does not exist.')
+        return load_variables(self.save_file)
+
+    def __get_top_k(self, k):
+        v = dict()
+        for key in self.vocab.keys():
+            v[key] = self.vocab[key][:k]
+        return v
+
+    @staticmethod
+    def __stop_words():
+        return stopwords.words('english')
+
+    @staticmethod
+    def __punctuations():
+        return list(string.punctuation) + ["--", "-LRB-", "-RRB-", "-LCB-", "-RCB-", "..."]
+
+    @staticmethod
+    def __pos_mapping():
+        return {'NNS': 'NN', 'NNP': 'NN', 'NNPS': 'NN', 'NN': 'NN',
+                'VB': 'VB', 'VBD': 'VB', 'VBN': 'VB', 'VBZ': 'VB', 'VBP': 'VB', 'VBG': 'VB',
+                'JJR': 'JJ', 'JJS': 'JJ', 'JJ': 'JJ'}
 
 
 if __name__ == "__main__":
-    if not os.path.exists(config.DICTIONARY_PATH):
-        build_dictionary()
-
-    saved_vocab = load_variables(config.DICTIONARY_PATH)
-    print(saved_vocab['words'])
-    print(saved_vocab['counts'])
+    vocab = Vocabulary(config.CAPTIONS_FILE, config.VOCAB_SIZE, config.VOCABULARY_FILE)
+    vocab.store()
