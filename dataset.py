@@ -87,10 +87,6 @@ class Dataset:
             output[indices[tag]] = 1
         return output
 
-    def __remove_punctuation(self, sentence):
-        punctuation_re = re.compile('[{}]'.format(re.escape(string.punctuation)))
-        return punctuation_re.sub(' ', sentence)
-
     def __captions(self):
         caption_processor = Captions(self.captions_file)
         return caption_processor.get_all_captions()
@@ -98,6 +94,11 @@ class Dataset:
     def __vocab(self):
         vocab = Vocabulary(self.captions_file, save_file=self.vocab_file)
         return vocab.load()['words']
+
+    @staticmethod
+    def __remove_punctuation(sentence):
+        punctuation_re = re.compile('[{}]'.format(re.escape(string.punctuation)))
+        return punctuation_re.sub(' ', sentence)
 
     @staticmethod
     def __accepted_pos():

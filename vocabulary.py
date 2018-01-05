@@ -32,13 +32,13 @@ class Vocabulary:
         pos_mapping = self.__pos_mapping()
         pos = [p3 for p1 in pos for p2 in p1 for p3 in p2]
         pos = [(w, pos_mapping.get(t)) for (w, t) in pos if pos_mapping.get(t) is not None]
-        vocab = Counter(elem for elem in pos)
-        vocab = vocab.most_common()
+        _vocab = Counter(elem for elem in pos)
+        _vocab = _vocab.most_common()
 
-        word = [w for ((w, t), c) in vocab]
+        word = [w for ((w, t), c) in _vocab]
         word = [w for w in word if w not in self.__stop_words()]
-        pos = [t for ((w, t), c) in vocab]
-        count = [c for ((_, _), c) in vocab]
+        pos = [t for ((w, t), c) in _vocab]
+        count = [c for ((_, _), c) in _vocab]
 
         poss = []
         counts = []
@@ -72,8 +72,8 @@ class Vocabulary:
             raise ValueError('Must specify the path for storing vocabulary.')
 
         self.build()
-        vocab = self.__get_top_k(self.size)
-        save_variables(self.save_file, vocab)
+        _vocab = self.__get_top_k(self.size)
+        save_variables(self.save_file, _vocab)
 
     def get(self):
         if self.vocab is None:
