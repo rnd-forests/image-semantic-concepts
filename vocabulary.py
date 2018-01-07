@@ -97,7 +97,7 @@ class Vocabulary:
 
     @staticmethod
     def __punctuations():
-        return list(string.punctuation) + ["--", "-LRB-", "-RRB-", "-LCB-", "-RCB-", "..."]
+        return list(string.punctuation)
 
     @staticmethod
     def __pos_mapping():

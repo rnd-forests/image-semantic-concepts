@@ -66,7 +66,7 @@ class Dataset:
                 _words.append(word)
         return _words
 
-    def __sentences_to_tags(self, sentences, min_df=1, max_df=1.0):
+    def __sentences_to_tags(self, sentences, min_df=0.1, max_df=0.75):
         tags = list()
         words = [self.__to_pos(unidecode(sentence)) for sentence in sentences]
         words = list(np.unique(list(chain(*words))))

@@ -1,6 +1,6 @@
 import os
 
-TAGS_COUNT = 6
+TAGS_COUNT = 5
 VOCAB_SIZE = 500
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
